@@ -143,9 +143,18 @@ namespace podcastClient
             foreach (XmlNode episode in xmlEpisodes)
             {
                 strTitle = episode.SelectSingleNode("title").InnerText;
-                strDesc = episode.SelectSingleNode("descritption").InnerText;
+                strDesc = episode.SelectSingleNode("description").InnerText;
                 strUrl = episode.SelectSingleNode("enclosure").Attributes["url"].Value;
+
+
+
+                //string[] listEpisodesInfo = { strTitle, strDesc, strUrl};
+                //ListViewItem item = new ListViewItem();
+                //item.Content = strTitle;
+                //item.Tag = listEpisodesInfo; // Associates the feeds information with the listview item so it can be easily accessed later
+                //lvPodEpisodes.Items.Add(item);
             }
+
 
 
         }
