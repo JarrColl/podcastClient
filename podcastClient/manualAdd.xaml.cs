@@ -66,6 +66,7 @@ namespace podcastClient
                 new XElement("url", strUrl),
                 new XElement("image", strFeedImage),
                 new XElement("imageName", strImageName));
+            podcast.SetAttributeValue("title", strFeedTitle);
             xmlFeeds.Root.Add(podcast);
             xmlFeeds.Save("feeds.xml");
 

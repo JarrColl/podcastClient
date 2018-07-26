@@ -93,51 +93,16 @@ namespace podcastClient
             string[] arrInfo = (string[])selected.Tag;
             //XmlReader xmlFeed = XmlReader.Create(arrInfo[2]);
             string[] epInfo = new string[4];
-            //while (xmlFeed.Read())
-            //{
-            //    if((xmlFeed.NodeType == XmlNodeType.Element) && (xmlFeed.Name == "item"))
-            //    {
-            //        if (xmlFeed.IsStartElement())
 
-            //        {
-
-            //            //return only when you have START tag
-
-            //            switch (xmlFeed.Name.ToString())
-
-            //            {
-            //                case "item":
-            //                    epInfo = new string[4];
-            //                    break;
-
-            //                case "title":
-            //                    epInfo[0] = xmlFeed.ReadString();
-            //                    break;
-
-            //                case "description":
-            //                    epInfo[1] = xmlFeed.ReadString();
-            //                    break;
-
-            //                case "enclosure":
-            //                    epInfo[2] = xmlFeed.ReadString();
-            //                    break;
-
-            //                case "itunes:duration":
-            //                    epInfo[3] = xmlFeed.ReadString();
-            //                    break;
-            //            }
-            //        }
-            //    }
-
-            //}
-            //MessageBox.Show(epInfo[0]);
 
 
             XmlDocument xmlFeed = new XmlDocument();
-            xmlFeed.Load(arrInfo[2]);
+            XmlDocument xmlSubbedFeeds = new XmlDocument();
+
+            xmlFeed.Load(arrInfo[2]); //Load xml of rss feed
+            xmlSubbedFeeds.Load("feeds.xml");
 
             // {Title, Desc, Url, ImageName}
-            xmlFeed.Load(arrInfo[2]); // Load xml from the RSS feed
             XmlNodeList xmlEpisodes = xmlFeed.SelectNodes("//rss/channel/item");
 
             foreach (XmlNode episode in xmlEpisodes)
@@ -146,13 +111,15 @@ namespace podcastClient
                 strDesc = episode.SelectSingleNode("description").InnerText;
                 strUrl = episode.SelectSingleNode("enclosure").Attributes["url"].Value;
 
+                xmlSubbedFeeds.SelectNodes("//feeds/podcast");
 
 
-                //string[] listEpisodesInfo = { strTitle, strDesc, strUrl};
-                //ListViewItem item = new ListViewItem();
-                //item.Content = strTitle;
-                //item.Tag = listEpisodesInfo; // Associates the feeds information with the listview item so it can be easily accessed later
-                //lvPodEpisodes.Items.Add(item);
+
+                string[] listEpisodesInfo = { strTitle, strDesc, strUrl };
+                ListViewItem item = new ListViewItem();
+                item.Content = strTitle;
+                item.Tag = listEpisodesInfo; // Associates the feeds information with the listview item so it can be easily accessed later
+                lvPodEpisodes.Items.Add(item);
             }
 
 
