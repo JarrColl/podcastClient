@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.IO;
 using System.Xml;
 using System.Xml.Linq;
 using System.Net;
@@ -29,7 +30,7 @@ namespace podcastClient
         string strFeedImage;
         string strImageName;
         Regex reImageName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))"); //The text after the last forward slash (file name)
-
+        
 
         string strUrl;
         public manualAdd()
@@ -59,6 +60,15 @@ namespace podcastClient
             strFeedImage = nodes[0].Attributes["href"].Value;
             strImageName = reImageName.Match(strFeedImage).ToString();
             // add the feed to the new xml file
+
+            if (!File.Exists("feeds.xml"))
+            {
+                var file = File.Create("feeds.xml");
+                file.Close();
+                File.WriteAllText("feeds.xml", "<?xml version=\"1.0\"?>" + Environment.NewLine + "<feeds>\n</feeds>");
+            }
+
+
             XDocument xmlFeeds = XDocument.Load("feeds.xml");
             XElement podcast = new XElement("podcast",
                 new XElement("title", strFeedTitle),
