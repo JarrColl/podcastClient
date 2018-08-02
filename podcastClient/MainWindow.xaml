@@ -50,16 +50,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-
-                <Button Grid.Column="0" x:Name="btnDownloads" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,20,0" Background="Transparent" Click="btnDownloads_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <Image x:Name="downloadImage" Source="images/download-icon.png"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Grid.Column="1" x:Name="btnSearchFeed" Content="Search Feeds" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,20,0"/>
-                <Button Grid.Column="2" x:Name="btnManualAdd" Content="Add Feed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Click="btnManualAdd_Click" Margin="0,0,20,0"/>
-                <Button Grid.Column="3" x:Name="btnSettings" Content="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <Button  x:Name="btnManualAdd" Content="Add Feed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Click="btnManualAdd_Click" Margin="2,0,20,0"/>
             </Grid>
 
 
@@ -81,19 +72,19 @@
                 <TabItem.Header>
                     <TextBlock Text="Episodes"/>
                 </TabItem.Header>
-                <ListView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Grid.RowSpan="1" Grid.ColumnSpan="1" x:Name="lvPodEpisodes" Grid.Row="1" Background="White" Foreground="Black" BorderBrush="Black" SelectionChanged="lvPodDownloads_SelectionChanged"/>
+                <ListView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Grid.RowSpan="1" Grid.ColumnSpan="1" x:Name="lvPodEpisodes" Grid.Row="1" Background="White" Foreground="Black" BorderBrush="Black" SelectionChanged="lvPodDownloads_SelectionChanged" MouseDoubleClick="lvPodEpisodes_MouseDoubleClick"/>
             </TabItem>
         </TabControl>
         <Border Grid.Row="1" BorderThickness="1" BorderBrush="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="2*"/>
-                    <RowDefinition Height="0.75*"/>
+                    <RowDefinition Height="0.9*"/>
                     <RowDefinition Height="2*"/>
                 </Grid.RowDefinitions>
                 <Image x:Name="imgFeedImage" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                <Label Grid.Row="1" Content="" Name="lblTitle" FontSize="22"/>
-                <TextBox Name="txtDesc" Grid.Row="3" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="1" Text="" x:Name="txtTitle" FontSize="18" TextWrapping="Wrap" Foreground="Black"/>
+                <TextBox Name="txtDesc" Grid.Row="3" TextWrapping="Wrap" IsReadOnly="True" Foreground="Black" BorderBrush="#FF474747"/>
             </Grid>
         </Border>
 
