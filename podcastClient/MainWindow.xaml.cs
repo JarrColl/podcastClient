@@ -49,9 +49,20 @@ namespace podcastClient
             winMA.Show();
         }
 
-        private void btnDownloads_Click(object sender, RoutedEventArgs e)
+        private void btnDel_Click(object sender, RoutedEventArgs e)
         {
-            refreshFeeds(); //Remove later
+            if (lvPodFeeds.SelectedItems.Count == 1)
+            {
+                XDocument xmlFeeds = XDocument.Load("feeds.xml");
+
+                ListViewItem item = (ListViewItem)lvPodFeeds.SelectedItem;
+                string[] arrInfo = (string[])item.Tag;
+                // arrInfo =     Title, Desc, Url, Image Name 
+                XElement deleteFeed = xmlFeeds.Descendants("podcast").Where(x => (string)x.Attribute("title") == arrInfo[0]).FirstOrDefault();
+                deleteFeed.Remove();
+                xmlFeeds.Save("feeds.xml");
+                lvPodFeeds.Items.RemoveAt(lvPodFeeds.Items.IndexOf(item));
+            }
         }
         #endregion
 
@@ -66,7 +77,7 @@ namespace podcastClient
 
             foreach(XmlNode feed in nodesFeeds)
             {
-                string strTitle = feed.SelectSingleNode("title").InnerText;
+                string strTitle = feed.Attributes["title"].InnerText;
                 string strDesc = feed.SelectSingleNode("description").InnerText;
                 string strUrl = feed.SelectSingleNode("url").InnerText;
                 string strImageName = feed.SelectSingleNode("imageName").InnerText;
@@ -118,7 +129,15 @@ namespace podcastClient
                 txtTitle.Text = arrInfo[0];
                 txtDesc.Text = arrInfo[1];
 
-                imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + arrInfo[3])));
+                try
+                {
+                    imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + arrInfo[3])));
+                }
+                catch(Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
+                {
+                    imgFeedImage.Source = null;
+                }
+
             }
         }
 
@@ -126,12 +145,13 @@ namespace podcastClient
         {
             if (e.ChangedButton == MouseButton.Left) // Left button was double clicked
             {
-                string strTitle;
-                string strDesc;
-                string strUrl;
 
                 if (lvPodFeeds.SelectedItems.Count == 1) // Check if an item is selected just to be safe
                 {
+                    string strTitle;
+                    string strDesc;
+                    string strUrl;
+
                     ListViewItem selected = (ListViewItem)lvPodFeeds.SelectedItem;
                     string[] arrInfo = (string[])selected.Tag;
                     //XmlReader xmlFeed = XmlReader.Create(arrInfo[2]);
@@ -140,7 +160,6 @@ namespace podcastClient
 
                     //Creating the xml documents to read
                     XmlDocument xmlFeed = new XmlDocument();
-                    XmlDocument xmlSubbedFeeds = new XmlDocument();
 
                     // Check if episodes.xml exists and create it if it doesn't
                     if (!File.Exists("episodes.xml"))
@@ -155,7 +174,6 @@ namespace podcastClient
                     // arrInfo = Title, Desc, Url, ImageName (For Phils reference)
 
                     xmlFeed.Load(arrInfo[2]); //Load xml of rss feed with the requested episodes
-                    xmlSubbedFeeds.Load("feeds.xml");
 
                     XmlNodeList xmlEpisodesNodes = xmlFeed.SelectNodes("//rss/channel/item");
 
@@ -166,7 +184,7 @@ namespace podcastClient
 
                     XElement podcast = new XElement("podcast");
                     podcast.SetAttributeValue("name", arrInfo[0]);
-                    xmlEpisodes.Root.Add(podcast); //ADD CHECKING TO SEE IF FEED IS ALREADY THERE
+                    xmlEpisodes.Root.Add(podcast); //ADD CHECKING TO SEE IF FEED/EPISODE IS ALREADY THERE
 
 
                     foreach (XmlNode ep in xmlEpisodesNodes)
@@ -174,8 +192,6 @@ namespace podcastClient
                         strTitle = ep.SelectSingleNode("title").InnerText;
                         strDesc = ep.SelectSingleNode("description").InnerText;
                         strUrl = ep.SelectSingleNode("enclosure").Attributes["url"].Value;
-
-                        xmlSubbedFeeds.SelectNodes("//feeds/podcast");
 
                         // The episode for the xml file
                         XElement episode = new XElement("episode",
@@ -214,7 +230,14 @@ namespace podcastClient
                 txtTitle.Text = epInfo[0];
                 txtDesc.Text = epInfo[1];
 
-                imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + epInfo[3])));
+                try
+                {
+                    imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + epInfo[3])));
+                }
+                catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
+                {
+                    imgFeedImage.Source = null;
+                }
             }
         }
         private void lvPodEpisodes_MouseDoubleClick(object sender, MouseButtonEventArgs e) // Downloading the episode in here
@@ -229,6 +252,7 @@ namespace podcastClient
                 }
             }
         }
+
         #endregion
 
 

@@ -51,6 +51,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Button  x:Name="btnManualAdd" Content="Add Feed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Click="btnManualAdd_Click" Margin="2,0,20,0"/>
+                <Button  x:Name="btnDel" Content="Delete Feed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,0,20,0" Grid.Column="1" Click="btnDel_Click"/>
             </Grid>
 
 
