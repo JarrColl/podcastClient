@@ -19,6 +19,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.IO;
 using System.Net;
+using System.ComponentModel;
 #endregion
 
 #region junk
@@ -220,7 +221,7 @@ namespace podcastClient
         }
         #endregion
 
-        #region Downloads Listview
+        #region Downloading
         private void lvPodDownloads_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (lvPodEpisodes.SelectedItems.Count == 1) // Check if an item is selected just to be safe
@@ -246,19 +247,45 @@ namespace podcastClient
             {
                 ListViewItem selected = (ListViewItem)lvPodEpisodes.SelectedItem;
                 string[] epInfo = (string[])selected.Tag;
+
+                Uri downloadUrl = new Uri(epInfo[2]);
+
+
+
+                List<Episode> downloading = new List<Episode>();
+                downloading.Add(new Episode() { Title = epInfo[0], Progress = "0%" });
+                lvPodDownloads.Items.Add((new Episode() { Title = epInfo[0], Progress = "0%" }));
                 using (WebClient client = new WebClient())
                 {
-
+                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(downloadProgress/*(downloading, 1)*/);
                 }
             }
         }
 
+        private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            //e.ProgressPercentage;
+        }
+
+        private void Completed(object sender, AsyncCompletedEventArgs e)
+        {
+            MessageBox.Show("Download completed!");
+        }
+
+        private void downloadProgress(/*List<Episode> downloading, int index, */object sender, DownloadProgressChangedEventArgs e)
+        {
+            
+        }
         #endregion
 
 
     }
 
-
+    public class Episode
+    {
+        public string Title { get; set; }
+        public string Progress { get; set; }
+    }
 
 }
 //TODO: add an about page with the version creator etc
