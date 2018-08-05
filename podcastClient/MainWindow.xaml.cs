@@ -20,6 +20,10 @@ using System.Web;
 using System.IO;
 using System.Net;
 using System.ComponentModel;
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
+using System.Collections.Specialized;
+using System.Collections;
 #endregion
 
 #region junk
@@ -28,12 +32,13 @@ namespace podcastClient
 
     public partial class MainWindow : Window
     {
-
+        private ItemsChangeObservableCollection<Episode> episodes = new ItemsChangeObservableCollection<Episode>(); // Used for updating the downloads list
         public static ListView lvPodFeeds1 { get; set; }
         public MainWindow()
         {
             InitializeComponent();
             Loaded += MyWindow_Loaded;
+            lvPodDownloads.ItemsSource = episodes;
         }
 
         private void MyWindow_Loaded(object sender, RoutedEventArgs e)
@@ -241,29 +246,36 @@ namespace podcastClient
                 }
             }
         }
-        private void lvPodEpisodes_MouseDoubleClick(object sender, MouseButtonEventArgs e) // Downloading the episode in here
+
+        Regex reImageName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))");
+        private void lvPodEpisodes_MouseDoubleClick(object senderTwo, MouseButtonEventArgs c) // Downloading the episode in here
         {
-            if (e.ChangedButton == MouseButton.Left) // Left button was double clicked
+            if (c.ChangedButton == MouseButton.Left) // Left button was double clicked
             {
                 ListViewItem selected = (ListViewItem)lvPodEpisodes.SelectedItem;
                 string[] epInfo = (string[])selected.Tag;
 
                 Uri downloadUrl = new Uri(epInfo[2]);
-
-
-
                 List<Episode> downloading = new List<Episode>();
-                downloading.Add(new Episode() { Title = epInfo[0], Progress = "0%" });
-                lvPodDownloads.Items.Add((new Episode() { Title = epInfo[0], Progress = "0%" }));
+
+                var newEpisode = new Episode() { Title = epInfo[0], Progress = "0%" };
+                episodes.Add(newEpisode);
+                int index = episodes.IndexOf(newEpisode);
                 using (WebClient client = new WebClient())
                 {
-                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(downloadProgress/*(downloading, 1)*/);
+                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, /*newEpisode,*/ index));
+                    client.DownloadFileAsync(downloadUrl, reImageName.Match(epInfo[2]).ToString());
                 }
+
+
             }
         }
 
-        private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e, /*Episode curEpisode,*/ int index)
         {
+
+            episodes[index].Progress = $"{e.ProgressPercentage}%";
+            lblTemp.Content = $"{e.ProgressPercentage}%";
             //e.ProgressPercentage;
         }
 
@@ -272,19 +284,110 @@ namespace podcastClient
             MessageBox.Show("Download completed!");
         }
 
-        private void downloadProgress(/*List<Episode> downloading, int index, */object sender, DownloadProgressChangedEventArgs e)
-        {
-            
-        }
+
         #endregion
 
+        #region playing episodes
+
+
+        #endregion
+
+        private void lvPodDownloads_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left) // Left button was double clicked
+            {
+
+            }
+        }
+    }
+
+    public class Episode : INotifyPropertyChanged
+    {
+        public string _Title;
+        public string Title
+        {
+            get => _Title;
+            set
+            {
+                _Title = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string _Progress;
+        public string Progress
+        {
+            get => _Progress;
+            set
+            {
+                _Progress = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
     }
 
-    public class Episode
+    public class ItemsChangeObservableCollection<T> :
+       ObservableCollection<T> where T : INotifyPropertyChanged
     {
-        public string Title { get; set; }
-        public string Progress { get; set; }
+        protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Add)
+            {
+                RegisterPropertyChanged(e.NewItems);
+            }
+            else if (e.Action == NotifyCollectionChangedAction.Remove)
+            {
+                UnRegisterPropertyChanged(e.OldItems);
+            }
+            else if (e.Action == NotifyCollectionChangedAction.Replace)
+            {
+                UnRegisterPropertyChanged(e.OldItems);
+                RegisterPropertyChanged(e.NewItems);
+            }
+
+            base.OnCollectionChanged(e);
+        }
+
+        protected override void ClearItems()
+        {
+            UnRegisterPropertyChanged(this);
+            base.ClearItems();
+        }
+
+        private void RegisterPropertyChanged(IList items)
+        {
+            foreach (INotifyPropertyChanged item in items)
+            {
+                if (item != null)
+                {
+                    item.PropertyChanged += new PropertyChangedEventHandler(item_PropertyChanged);
+                }
+            }
+        }
+
+        private void UnRegisterPropertyChanged(IList items)
+        {
+            foreach (INotifyPropertyChanged item in items)
+            {
+                if (item != null)
+                {
+                    item.PropertyChanged -= new PropertyChangedEventHandler(item_PropertyChanged);
+                }
+            }
+        }
+
+        private void item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            base.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
     }
 
 }

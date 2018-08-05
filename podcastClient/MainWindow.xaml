@@ -53,6 +53,7 @@
                 <Button  x:Name="btnManualAdd" Content="Add Feed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Click="btnManualAdd_Click" Margin="2,0,20,0"/>
                 <Button  x:Name="btnDel" Content="Delete Feed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,0,20,0" Grid.Column="1" Click="btnDel_Click"/>
             </Grid>
+            <Label x:Name="lblTemp" Content="Label" Grid.Column="2" HorizontalAlignment="Left" Margin="162,10,0,0" VerticalAlignment="Top"/>
 
 
         </Grid>
@@ -67,7 +68,7 @@
                 <TabItem.Header>
                     <TextBlock Text="Downloads"/>
                 </TabItem.Header>
-                <ListView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Grid.RowSpan="1" Grid.ColumnSpan="1" x:Name="lvPodDownloads" Grid.Row="1" Background="White" Foreground="Black" BorderBrush="Black" SelectionChanged="lvPodDownloads_SelectionChanged">
+                <ListView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Grid.RowSpan="1" Grid.ColumnSpan="1" x:Name="lvPodDownloads" Grid.Row="1" Background="White" Foreground="Black" BorderBrush="Black" SelectionChanged="lvPodDownloads_SelectionChanged" MouseDoubleClick="lvPodDownloads_MouseDoubleClick">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Title" DisplayMemberBinding="{Binding Title}" Width="120"/>
