@@ -24,6 +24,8 @@ namespace podcastClient
     /// </summary>
     public partial class manualAdd : Window
     {
+        static string strFeedsXMLPath = "feeds.xml";
+
         // Feed info variables
         string strFeedTitle;
         string strFeedDesc;
@@ -84,15 +86,15 @@ namespace podcastClient
                         strImageName = ""; // Handles the non existent image path when setting the image source
                     }
 
-                    if (!File.Exists("feeds.xml")) // For safety
+                    if (!File.Exists(strFeedsXMLPath)) // For safety
                     {
-                        var file = File.Create("feeds.xml");
+                        var file = File.Create(strFeedsXMLPath);
                         file.Close();
-                        File.WriteAllText("feeds.xml", "<?xml version=\"1.0\"?>" + Environment.NewLine + "<feeds>\n</feeds>"); // Setting up xml file
+                        File.WriteAllText(strFeedsXMLPath, "<?xml version=\"1.0\"?>" + Environment.NewLine + "<feeds>\n</feeds>"); // Setting up xml file
                     }
 
 
-                    XDocument xmlFeeds = XDocument.Load("feeds.xml");
+                    XDocument xmlFeeds = XDocument.Load(strFeedsXMLPath);
                     XElement podcast = new XElement("podcast", //Creating an element with all feed information
                         new XElement("title", strFeedTitle),
                         new XElement("description", strFeedDesc),
@@ -101,7 +103,7 @@ namespace podcastClient
                         new XElement("imageName", strImageName));
                     podcast.SetAttributeValue("title", strFeedTitle);
                     xmlFeeds.Root.Add(podcast); // Adding the element to the feeds.xml file
-                    xmlFeeds.Save("feeds.xml");
+                    xmlFeeds.Save(strFeedsXMLPath);
 
 
                     MainWindow.refreshFeeds(); // Add the podcast to the main list view

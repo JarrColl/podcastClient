@@ -32,7 +32,11 @@ namespace podcastClient
 
     public partial class MainWindow : Window
     {
-        private ItemsChangeObservableCollection<Episode> episodes = new ItemsChangeObservableCollection<Episode>(); // Used for updating the downloads list
+        static string strDownloadsXMLPath = "downloads.xml";
+        static string strFeedsXMLPath = "feeds.xml";
+        static string strEpisodesXMLPath = "episodes.xml";
+
+        static private ItemsChangeObservableCollection<Episode> episodes = new ItemsChangeObservableCollection<Episode>(); // Used for updating the downloads list
         public static ListView lvPodFeeds1 { get; set; }
         public MainWindow()
         {
@@ -45,6 +49,7 @@ namespace podcastClient
         {
             lvPodFeeds1 = lvPodFeeds;
             refreshFeeds();
+            refreshDownloads();
         }
         #endregion
 
@@ -59,14 +64,14 @@ namespace podcastClient
         {
             if (lvPodFeeds.SelectedItems.Count == 1)
             {
-                XDocument xmlFeeds = XDocument.Load("feeds.xml");
+                XDocument xmlFeeds = XDocument.Load(strFeedsXMLPath);
 
                 ListViewItem item = (ListViewItem)lvPodFeeds.SelectedItem;
                 string[] arrInfo = (string[])item.Tag;
                 // arrInfo =     Title, Desc, Url, Image Name 
                 XElement deleteFeed = xmlFeeds.Descendants("podcast").Where(x => (string)x.Attribute("title") == arrInfo[0]).FirstOrDefault();
                 deleteFeed.Remove();
-                xmlFeeds.Save("feeds.xml");
+                xmlFeeds.Save(strFeedsXMLPath);
                 lvPodFeeds.Items.RemoveAt(lvPodFeeds.Items.IndexOf(item));
             }
         }
@@ -76,7 +81,7 @@ namespace podcastClient
         public static void refreshFeeds() //Adds the feeds from the xml file to the list view
         {
             XmlDocument xmlFeeds = new XmlDocument();
-            xmlFeeds.Load("feeds.xml"); // Load xml from the subbed feeds xml
+            xmlFeeds.Load(strFeedsXMLPath); // Load xml from the subbed feeds xml
 
             XmlNodeList nodesFeeds = xmlFeeds.SelectNodes("//feeds/podcast");
 
@@ -99,9 +104,28 @@ namespace podcastClient
 
         }
 
+        public static void refreshDownloads()
+        {
+            XDocument xmlDownloads = XDocument.Load(strDownloadsXMLPath);
+
+            IEnumerable<XElement> xmlEpisodes = xmlDownloads.Descendants("episode");
+
+            foreach(XElement episode in xmlEpisodes)
+            {
+                string strTitle = episode.Attribute("title").Value;
+                string strDesc = episode.Element("description").Value;
+                string strImgName = episode.Element("imgName").Value;
+                string strFileName = episode.Element("fileName").Value;
+
+                Episode ep = new Episode() { Title = strTitle, Description = strDesc, FileName = strFileName, ImgName = strImgName, Progress = "Done" };
+                episodes.Add(ep);
+            }
+            
+        }
+
         //public static void refreshEpisodes(ListView lv, bool booCheckOnline) //Adds the feeds from the xml file to the list view
         //{
-        //    XDocument xmlFeeds = XDocument.Load("episodes.xml");
+        //    XDocument xmlFeeds = XDocument.Load(strEpisodesXMLPath);
 
         //    //XmlNodeList nodesFeeds = xmlFeeds.SelectNodes("//feeds/podcast");
 
@@ -125,33 +149,16 @@ namespace podcastClient
         //}
         #endregion
 
-        #region Subs listview
-        private void lvPodFeeds_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (lvPodFeeds.SelectedItems.Count == 1) // Check if an item is selected just to be safe
-            {
-                ListViewItem item = (ListViewItem)lvPodFeeds.SelectedItem;
-                string[] arrInfo = (string[])item.Tag;
-                txtTitle.Text = arrInfo[0];
-                txtDesc.Text = arrInfo[1];
+        #region lvPodFeeds
 
-                try
-                {
-                    imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + arrInfo[3])));
-                }
-                catch(Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
-                {
-                    imgFeedImage.Source = null;
-                }
 
-            }
-        }
-
+        Regex reFileName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))");
         private void lvPodFeeds_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            
             if (e.ChangedButton == MouseButton.Left) // Left button was double clicked
             {
-
+                lvPodEpisodes.Items.Clear();
                 if (lvPodFeeds.SelectedItems.Count == 1) // Check if an item is selected just to be safe
                 {
                     string strTitle;
@@ -168,13 +175,13 @@ namespace podcastClient
                     XmlDocument xmlFeed = new XmlDocument();
 
                     // Check if episodes.xml exists and create it if it doesn't
-                    if (!File.Exists("episodes.xml"))
+                    if (!File.Exists(strEpisodesXMLPath))
                     {
-                        var file = File.Create("episodes.xml");
+                        var file = File.Create(strEpisodesXMLPath);
                         file.Close();
-                        File.WriteAllText("episodes.xml", "<?xml version=\"1.0\"?>" + Environment.NewLine + "<feeds>\n</feeds>");
+                        File.WriteAllText(strEpisodesXMLPath, "<?xml version=\"1.0\"?>" + Environment.NewLine + "<feeds>\n</feeds>");
                     }
-                    XDocument xmlEpisodes = XDocument.Load("episodes.xml");
+                    XDocument xmlEpisodes = XDocument.Load(strEpisodesXMLPath);
 
 
                     // arrInfo = Title, Desc, Url, ImageName (For Phils reference)
@@ -211,13 +218,13 @@ namespace podcastClient
                         currentFeed.Add(episode);
 
 
-                        string[] listEpisodesInfo = { strTitle, strDesc, strUrl, arrInfo[3] };
+                        string[] listEpisodesInfo = { strTitle, strDesc, strUrl, reFileName.Match(strUrl).ToString(), arrInfo[3]};
                         ListViewItem item = new ListViewItem();
                         item.Content = strTitle;
                         item.Tag = listEpisodesInfo; // Associates the feeds information with the listview item so it can be easily accessed later
                         lvPodEpisodes.Items.Add(item);
                     }
-                    xmlEpisodes.Save("episodes.xml");
+                    xmlEpisodes.Save(strEpisodesXMLPath);
 
                 }
                 
@@ -226,19 +233,22 @@ namespace podcastClient
         }
         #endregion
 
-        #region Downloading
-        private void lvPodDownloads_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        #region selection changed
+        private void lvPodEpisodes_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (lvPodEpisodes.SelectedItems.Count == 1) // Check if an item is selected just to be safe
             {
                 ListViewItem item = (ListViewItem)lvPodEpisodes.SelectedItem;
                 string[] epInfo = (string[])item.Tag;
+                // epInfo =  strTitle, strDesc, strUrl, File Name, Image Name
+
                 txtTitle.Text = epInfo[0];
                 txtDesc.Text = epInfo[1];
 
+
                 try
                 {
-                    imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + epInfo[3])));
+                    imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + epInfo[4])));
                 }
                 catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
                 {
@@ -247,7 +257,51 @@ namespace podcastClient
             }
         }
 
-        Regex reImageName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))");
+        private void lvPodFeeds_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (lvPodFeeds.SelectedItems.Count == 1) // Check if an item is selected just to be safe
+            {
+                ListViewItem item = (ListViewItem)lvPodFeeds.SelectedItem;
+                string[] arrInfo = (string[])item.Tag;
+                txtTitle.Text = arrInfo[0];
+                txtDesc.Text = arrInfo[1];
+
+                try
+                {
+                    imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + arrInfo[3])));
+                }
+                catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
+                {
+                    imgFeedImage.Source = null;
+                }
+
+            }
+        }
+
+        private void lvPodDownloads_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (lvPodEpisodes.SelectedItems.Count == 1) // Check if an item is selected just to be safe
+            {
+                Episode ep = (Episode)lvPodDownloads.SelectedItem;
+
+                txtTitle.Text = ep.Title;
+                txtDesc.Text = ep.Description;
+
+
+                try
+                {
+                    imgFeedImage.Source = new BitmapImage(new Uri((Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + ep.ImgName)));
+                }
+                catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
+                {
+                    imgFeedImage.Source = null;
+                }
+            }
+        }
+        #endregion
+
+        #region Downloading
+
         private void lvPodEpisodes_MouseDoubleClick(object senderTwo, MouseButtonEventArgs c) // Downloading the episode in here
         {
             if (c.ChangedButton == MouseButton.Left) // Left button was double clicked
@@ -257,48 +311,73 @@ namespace podcastClient
 
                 Uri downloadUrl = new Uri(epInfo[2]);
                 List<Episode> downloading = new List<Episode>();
-
-                var newEpisode = new Episode() { Title = epInfo[0], Progress = "0%" };
+                // epInfo =  strTitle, strDesc, strUrl, File Name, Image Name
+                var newEpisode = new Episode() { Title = epInfo[0], Progress = "0%", FileName=epInfo[3], Description=epInfo[1], ImgName=epInfo[4]};
                 episodes.Add(newEpisode);
                 int index = episodes.IndexOf(newEpisode);
+
                 using (WebClient client = new WebClient())
                 {
-                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, /*newEpisode,*/ index));
-                    client.DownloadFileAsync(downloadUrl, reImageName.Match(epInfo[2]).ToString());
+                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, index));
+                    client.DownloadFileCompleted += new AsyncCompletedEventHandler((sender, e) => Completed(sender, e, index));
+
+                    client.DownloadFileAsync(downloadUrl, epInfo[3]);
                 }
 
 
             }
         }
 
-        private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e, /*Episode curEpisode,*/ int index)
+        private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e, int index)
         {
 
             episodes[index].Progress = $"{e.ProgressPercentage}%";
-            lblTemp.Content = $"{e.ProgressPercentage}%";
             //e.ProgressPercentage;
         }
 
-        private void Completed(object sender, AsyncCompletedEventArgs e)
+        private void Completed(object sender, AsyncCompletedEventArgs e, int index)
         {
-            MessageBox.Show("Download completed!");
+            episodes[index].Progress = "Done";
+            Episode ep = episodes[index];
+
+            if (!File.Exists(strDownloadsXMLPath))
+            {
+                var file = File.Create(strDownloadsXMLPath);
+                file.Close();
+                File.WriteAllText(strDownloadsXMLPath, "<?xml version=\"1.0\"?>" + Environment.NewLine + "<feeds>\n</feeds>");
+            }
+            XDocument xmlEpisodes = XDocument.Load(strDownloadsXMLPath);
+
+            XElement xmlEpisode = new XElement("episode",
+                new XElement("description", ep.Description),
+                new XElement("imgName", ep.ImgName),
+                new XElement("fileName", ep.FileName));
+
+            xmlEpisode.SetAttributeValue("title", ep.Title);
+
+            xmlEpisodes.Root.Add(xmlEpisode);
+            xmlEpisodes.Save(strDownloadsXMLPath);
+
+            MessageBox.Show("Download completed!"); //temp
         }
 
 
         #endregion
 
         #region playing episodes
-
-
-        #endregion
-
         private void lvPodDownloads_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left) // Left button was double clicked
             {
+                Episode ep = (Episode)lvPodDownloads.SelectedItem;
 
+                System.Diagnostics.Process.Start(ep.FileName);
             }
         }
+
+        #endregion
+
+
     }
 
     public class Episode : INotifyPropertyChanged
@@ -324,6 +403,10 @@ namespace podcastClient
                 OnPropertyChanged();
             }
         }
+
+        public string Description { get; set; }
+        public string ImgName { get; set; }
+        public string FileName { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
