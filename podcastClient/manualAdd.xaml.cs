@@ -24,7 +24,8 @@ namespace podcastClient
     /// </summary>
     public partial class manualAdd : Window
     {
-        static string strFeedsXMLPath = "feeds.xml";
+        static string strFeedsXMLPath = "xml\\feeds.xml";
+        static string strFeedImagesDirPath = Environment.CurrentDirectory + "\\images\\";
 
         // Feed info variables
         string strFeedTitle;
@@ -77,7 +78,7 @@ namespace podcastClient
 
                         using (var client = new WebClient())
                         {
-                            client.DownloadFileAsync(new Uri(strFeedImage), (Environment.CurrentDirectory + "feedImages\\" + strImageName));
+                            client.DownloadFileAsync(new Uri(strFeedImage), (strFeedImagesDirPath + strImageName));
                         }
                     }
                     else

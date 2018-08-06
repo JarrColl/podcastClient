@@ -26,7 +26,7 @@ using System.Collections.Specialized;
 using System.Collections;
 #endregion
 
-#region junk
+#region mainWindow
 namespace podcastClient
 {
 
@@ -91,14 +91,23 @@ namespace podcastClient
             if (lvPodFeeds.SelectedItems.Count == 1)
             {
                 XDocument xmlFeeds = XDocument.Load(strFeedsXMLPath);
-
                 ListViewItem item = (ListViewItem)lvPodFeeds.SelectedItem;
                 string[] arrInfo = (string[])item.Tag;
+
                 // arrInfo =     Title, Desc, Url, Image Name 
                 XElement deleteFeed = xmlFeeds.Descendants("podcast").Where(x => (string)x.Attribute("title") == arrInfo[0]).FirstOrDefault();
-                deleteFeed.Remove();
-                xmlFeeds.Save(strFeedsXMLPath);
-                lvPodFeeds.Items.RemoveAt(lvPodFeeds.Items.IndexOf(item));
+
+                if (deleteFeed != null)
+                {
+                    deleteFeed.Remove(); // Remove from the xml file
+                    xmlFeeds.Save(strFeedsXMLPath);
+                }
+                lvPodFeeds.Items.RemoveAt(lvPodFeeds.Items.IndexOf(item)); // Remove from the listview
+
+                if(File.Exists(strFeedImagesDirPath + arrInfo[3]))
+                {
+                    File.Delete(strFeedImagesDirPath + arrInfo[3]); // Delete the feeds cover image
+                }
             }
         }
 
@@ -245,7 +254,7 @@ namespace podcastClient
 
                 try
                 {
-                    imgFeedImage.Source = new BitmapImage(new Uri((strFeedImagesDirPath + epInfo[4])));
+                    imgFeedImage.Source = LoadImage(strFeedImagesDirPath + epInfo[4]);
                 }
                 catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
                 {
@@ -265,7 +274,7 @@ namespace podcastClient
 
                 try
                 {
-                    imgFeedImage.Source = new BitmapImage(new Uri((strFeedImagesDirPath + arrInfo[3])));
+                    imgFeedImage.Source = LoadImage(strFeedImagesDirPath + arrInfo[3]);
                 }
                 catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
                 {
@@ -287,10 +296,9 @@ namespace podcastClient
                     txtTitle.Text = ep.Title;
                     txtDesc.Text = ep.Description;
 
-
                     try
                     {
-                        imgFeedImage.Source = new BitmapImage(new Uri((strFeedImagesDirPath + ep.ImgName)));
+                        imgFeedImage.Source = LoadImage(strFeedImagesDirPath + ep.ImgName);
                     }
                     catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
                     {
@@ -298,6 +306,37 @@ namespace podcastClient
                     }
                 }
             }
+        }
+
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.Source is TabControl)
+            {
+                lvPodDownloads.SelectedItems.Clear();
+                lvPodFeeds.SelectedItems.Clear();
+                lvPodEpisodes.SelectedItems.Clear();
+
+                txtTitle.Text = "";
+                txtDesc.Text = "";
+                imgFeedImage.Source = null;
+            }
+
+            if (tabSubscriptions.IsSelected)
+            {
+                btnDel.IsEnabled = true;
+                btnDelEp.IsEnabled = false;
+            }
+            if (tabEpisodes.IsSelected)
+            {
+                btnDel.IsEnabled = false;
+                btnDelEp.IsEnabled = false;
+            }
+            if (tabDownloads.IsSelected)
+            {
+                btnDel.IsEnabled = false;
+                btnDelEp.IsEnabled = true;
+            }
+
         }
         #endregion
 
@@ -392,12 +431,13 @@ namespace podcastClient
 
         #endregion
 
+        #region misc Functions
         static private void deleteDownload(Episode ep)
         {
             if (ep.Progress == "Done")
             {
-                if (File.Exists(strDownloadsDirPath +  ep.FileName))
-                    File.Delete(strDownloadsDirPath +  ep.FileName);
+                if (File.Exists(strDownloadsDirPath + ep.FileName))
+                    File.Delete(strDownloadsDirPath + ep.FileName);
                 if (ep != null)
                 {
                     episodes.Remove(ep);
@@ -419,21 +459,25 @@ namespace podcastClient
 
         }
 
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private BitmapImage LoadImage(string myImageFile) // Using this stops the program from locking up images so I can delete them when removing a feed.
         {
-            if (e.Source is TabControl)
+            BitmapImage myRetVal = null;
+            if (myImageFile != null)
             {
-                lvPodDownloads.SelectedItems.Clear();
-                lvPodFeeds.SelectedItems.Clear();
-                lvPodEpisodes.SelectedItems.Clear();
-
-                txtTitle.Text = "";
-                txtDesc.Text = "";
-                imgFeedImage.Source = null;
+                BitmapImage image = new BitmapImage();
+                using (FileStream stream = File.OpenRead(myImageFile))
+                {
+                    image.BeginInit();
+                    image.CacheOption = BitmapCacheOption.OnLoad;
+                    image.StreamSource = stream;
+                    image.EndInit();
+                }
+                myRetVal = image;
             }
-
+            return myRetVal;
         }
     }
+    #endregion
 
     public class Episode : INotifyPropertyChanged
     {
@@ -474,7 +518,7 @@ namespace podcastClient
 
     }
 
-    public class ItemsChangeObservableCollection<T> :
+    public class ItemsChangeObservableCollection<T> :               // This class tells the listview to update when an Episode property is changed (eg download progress) because normal ObservableCollections do not.
        ObservableCollection<T> where T : INotifyPropertyChanged
     {
         protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
