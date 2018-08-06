@@ -77,7 +77,7 @@ namespace podcastClient
 
                         using (var client = new WebClient())
                         {
-                            client.DownloadFileAsync(new Uri(strFeedImage), (Environment.CurrentDirectory + "\\..\\..\\feedImages\\" + strImageName));
+                            client.DownloadFileAsync(new Uri(strFeedImage), (Environment.CurrentDirectory + "feedImages\\" + strImageName));
                         }
                     }
                     else
