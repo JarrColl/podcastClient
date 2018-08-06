@@ -57,7 +57,7 @@
 
 
         </Grid>
-        <TabControl Grid.Column="1" Grid.Row="1">
+        <TabControl Grid.Column="1" Grid.Row="1" SelectionChanged="TabControl_SelectionChanged">
             <TabItem>
                 <TabItem.Header>
                     <TextBlock Text="Subscriptions"/>
