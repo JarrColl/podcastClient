@@ -123,7 +123,7 @@ namespace podcastClient
         #region refreshing
         public static void refreshFeeds() //Adds the feeds from the xml file to the list view
         {
-
+            lvPodFeeds1.Items.Clear();
             if (!File.Exists(strFeedsXMLPath)) // For safety
             {
                 var file = File.Create(strFeedsXMLPath);
@@ -193,9 +193,9 @@ namespace podcastClient
 
         #region fill episodes list
 
-
         Regex reFileName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))");
         private readonly BackgroundWorker worker = new BackgroundWorker();
+
         private void lvPodFeeds_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             
@@ -207,16 +207,14 @@ namespace podcastClient
 
                     if (!worker.IsBusy)
                     {
-                        lvPodEpisodes.Items.Clear();
-                        worker.DoWork += worker_DoWork;
-                        //worker.RunWorkerCompleted += worker_RunWorkerCompleted
-
                         ListViewItem selected = (ListViewItem)lvPodFeeds.SelectedItem;
                         string[] arrInfo = (string[])selected.Tag;
 
+                        worker.DoWork += worker_DoWork;
+                        worker.RunWorkerCompleted += worker_RunWorkerCompleted;
                         worker.RunWorkerAsync(arrInfo);
+                        Mouse.OverrideCursor = Cursors.Wait;
                     }
-
 
                 }
                 
@@ -224,13 +222,15 @@ namespace podcastClient
             
         }
 
+
+
         private void worker_DoWork(object sender, DoWorkEventArgs e)
         {
             string strTitle;
             string strDesc;
             string strUrl;
             string[] arrInfo = (string[])e.Argument;
-            
+            this.Dispatcher.Invoke(() => { lvPodEpisodes.Items.Clear(); });
 
             //Creating the xml documents to read
             XmlDocument xmlFeed = new XmlDocument();
@@ -260,6 +260,11 @@ namespace podcastClient
 
             }
 
+        }
+
+        private void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            Mouse.OverrideCursor = null;
         }
 
 
@@ -385,13 +390,16 @@ namespace podcastClient
                     using (WebClient client = new WebClient())
                     {
                         var newEpisode = new Episode() { Title = epInfo[0], Progress = "0%", FileName = epInfo[3], Description = epInfo[1], ImgName = epInfo[4], feedClient = client};
-                        episodes.Add(newEpisode);
-                        int index = episodes.IndexOf(newEpisode);
+                        if (!episodes.Any(p => p.Title == newEpisode.Title && p.Description == newEpisode.Description && p.FileName == newEpisode.FileName)) // Prevents duplicate downloads
+                        {
+                            episodes.Add(newEpisode);
+                            int index = episodes.IndexOf(newEpisode);
 
-                        client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, newEpisode));
-                        client.DownloadFileCompleted += new AsyncCompletedEventHandler((sender, e) => Completed(sender, e, newEpisode));
+                            client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, newEpisode));
+                            client.DownloadFileCompleted += new AsyncCompletedEventHandler((sender, e) => Completed(sender, e, newEpisode));
 
-                        client.DownloadFileAsync(downloadUrl, (strDownloadsDirPath + epInfo[3]));
+                            client.DownloadFileAsync(downloadUrl, (strDownloadsDirPath + epInfo[3]));
+                        }
                     }
 
 

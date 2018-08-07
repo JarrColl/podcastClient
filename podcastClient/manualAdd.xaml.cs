@@ -16,12 +16,11 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.ComponentModel;
 
 namespace podcastClient
 {
-    /// <summary>
-    /// Interaction logic for manualAdd.xaml
-    /// </summary>
+
     public partial class manualAdd : Window
     {
         static string strFeedsXMLPath = "xml\\feeds.xml";
@@ -33,7 +32,7 @@ namespace podcastClient
         string strFeedImage;
         string strImageName;
         Regex reImageName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))"); //The text after the last forward slash (file name)
-        
+
 
         string strUrl;
         public manualAdd()
@@ -46,10 +45,22 @@ namespace podcastClient
             this.Close();
         }
 
+        private readonly BackgroundWorker worker = new BackgroundWorker();
+
         private void btnAdd_Click(object sender, RoutedEventArgs e)
         {
             strUrl = txtUrl.Text;
+            worker.DoWork += worker_DoWork;
+            worker.RunWorkerCompleted += worker_RunWorkerCompleted;
+            worker.RunWorkerAsync(strUrl);
+            Mouse.OverrideCursor = Cursors.Wait;
+            this.Close();
 
+
+        }
+        private void worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            string strUrl = (string)e.Argument;
             XmlDocument xmlNew = new XmlDocument();
 
             try //For when the user does not enter a valid url with an xml file
@@ -83,7 +94,7 @@ namespace podcastClient
                     }
                     else
                     {
-                        strFeedImage = ""; 
+                        strFeedImage = "";
                         strImageName = ""; // Handles the non existent image path when setting the image source
                     }
 
@@ -93,7 +104,6 @@ namespace podcastClient
                         file.Close();
                         File.WriteAllText(strFeedsXMLPath, "<?xml version=\"1.0\"?>" + Environment.NewLine + "<feeds>\n</feeds>"); // Setting up xml file
                     }
-
 
                     XDocument xmlFeeds = XDocument.Load(strFeedsXMLPath);
                     XElement podcast = new XElement("podcast", //Creating an element with all feed information
@@ -106,9 +116,12 @@ namespace podcastClient
                     xmlFeeds.Root.Add(podcast); // Adding the element to the feeds.xml file
                     xmlFeeds.Save(strFeedsXMLPath);
 
+                    this.Dispatcher.Invoke(() => 
+                    {
+                        MainWindow.refreshFeeds();
 
-                    MainWindow.refreshFeeds(); // Add the podcast to the main list view
-                    this.Close();
+                    }); // Add the podcast to the main list view
+
                 }
 
             }
@@ -116,7 +129,10 @@ namespace podcastClient
             {
                 MessageBox.Show("Not a valid URL!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        
+        }
+        private void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            Mouse.OverrideCursor = null;
         }
     }
 }
