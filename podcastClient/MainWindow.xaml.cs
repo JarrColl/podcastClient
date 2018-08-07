@@ -191,52 +191,78 @@ namespace podcastClient
 
         #endregion
 
-        #region lvPodFeeds
+        #region fill episodes list
 
 
         Regex reFileName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))");
+        private readonly BackgroundWorker worker = new BackgroundWorker();
         private void lvPodFeeds_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             
             if (e.ChangedButton == MouseButton.Left) // Left button was double clicked
             {
-                lvPodEpisodes.Items.Clear();
+
                 if (lvPodFeeds.SelectedItems.Count == 1) // Check if an item is selected just to be safe
                 {
-                    string strTitle;
-                    string strDesc;
-                    string strUrl;
 
-                    ListViewItem selected = (ListViewItem)lvPodFeeds.SelectedItem;
-                    string[] arrInfo = (string[])selected.Tag;
-
-                    //Creating the xml documents to read
-                    XmlDocument xmlFeed = new XmlDocument();
-
-                    // arrInfo = Title, Desc, Url, ImageName (For Phils reference)
-
-                    xmlFeed.Load(arrInfo[2]); //Load xml of rss feed with the requested episodes
-
-                    XmlNodeList xmlEpisodesNodes = xmlFeed.SelectNodes("//rss/channel/item");
-
-                    foreach (XmlNode ep in xmlEpisodesNodes)
+                    if (!worker.IsBusy)
                     {
-                        strTitle = ep.SelectSingleNode("title").InnerText;
-                        strDesc = ep.SelectSingleNode("description").InnerText;
-                        strUrl = ep.SelectSingleNode("enclosure").Attributes["url"].Value;
+                        lvPodEpisodes.Items.Clear();
+                        worker.DoWork += worker_DoWork;
+                        //worker.RunWorkerCompleted += worker_RunWorkerCompleted
 
-                        string[] listEpisodesInfo = { strTitle, strDesc, strUrl, reFileName.Match(strUrl).ToString(), arrInfo[3]};
-                        ListViewItem item = new ListViewItem();
-                        item.Content = strTitle;
-                        item.Tag = listEpisodesInfo; // Associates the feeds information with the listview item so it can be easily accessed later
-                        lvPodEpisodes.Items.Add(item);
+                        ListViewItem selected = (ListViewItem)lvPodFeeds.SelectedItem;
+                        string[] arrInfo = (string[])selected.Tag;
+
+                        worker.RunWorkerAsync(arrInfo);
                     }
+
 
                 }
                 
             }
             
         }
+
+        private void worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            string strTitle;
+            string strDesc;
+            string strUrl;
+            string[] arrInfo = (string[])e.Argument;
+            
+
+            //Creating the xml documents to read
+            XmlDocument xmlFeed = new XmlDocument();
+
+            // arrInfo = Title, Desc, Url, ImageName (For Phils reference)
+
+            xmlFeed.Load(arrInfo[2]); //Load xml of rss feed with the requested episodes
+
+            XmlNodeList xmlEpisodesNodes = xmlFeed.SelectNodes("//rss/channel/item");
+
+            foreach (XmlNode ep in xmlEpisodesNodes)
+            {
+                strTitle = ep.SelectSingleNode("title").InnerText;
+                strDesc = ep.SelectSingleNode("description").InnerText;
+                strUrl = ep.SelectSingleNode("enclosure").Attributes["url"].Value;
+
+                string[] listEpisodesInfo = { strTitle, strDesc, strUrl, reFileName.Match(strUrl).ToString(), arrInfo[3] };
+
+                this.Dispatcher.Invoke(() =>
+                {
+                    ListViewItem bgItem = new ListViewItem();
+                    bgItem.Content = strTitle;
+                    bgItem.Tag = listEpisodesInfo; // Associates the feeds information with the listview item so it can be easily accessed later
+                    lvPodEpisodes.Items.Add(bgItem);
+                }
+                );
+
+            }
+
+        }
+
+
         #endregion
 
         #region selection changed
