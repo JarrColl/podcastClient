@@ -2,21 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Xml;
 using System.Xml.Linq;
 using System.Text.RegularExpressions;
-using System.Web;
 using System.IO;
 using System.Net;
 using System.ComponentModel;
@@ -37,7 +29,7 @@ namespace podcastClient
         static string strFeedImagesDirPath = Environment.CurrentDirectory+"\\images\\";
         static string strDownloadsDirPath = "downloads\\";
 
-        static private ItemsChangeObservableCollection<Episode> episodes = new ItemsChangeObservableCollection<Episode>(); // Used for updating the downloads list
+        static private ItemsChangeObservableCollection<Episode> obCollEpisodes = new ItemsChangeObservableCollection<Episode>(); // Used for updating the downloads list
         public static ListView lvPodFeeds1 { get; set; }
 
 
@@ -59,7 +51,7 @@ namespace podcastClient
 
             InitializeComponent();
             Loaded += MyWindow_Loaded;
-            lvPodDownloads.ItemsSource = episodes;
+            lvPodDownloads.ItemsSource = obCollEpisodes;
         }
 
         private void MyWindow_Loaded(object sender, RoutedEventArgs e)
@@ -71,7 +63,7 @@ namespace podcastClient
 
         private void MainWindow1_Closing(object sender, CancelEventArgs e)
         {
-            foreach (Episode ep in episodes)
+            foreach (Episode ep in obCollEpisodes)
             {
                 if (ep.Progress != "Done")
                     ep.feedClient.CancelAsync();
@@ -91,18 +83,18 @@ namespace podcastClient
             if (lvPodFeeds.SelectedItems.Count == 1)
             {
                 XDocument xmlFeeds = XDocument.Load(strFeedsXMLPath);
-                ListViewItem item = (ListViewItem)lvPodFeeds.SelectedItem;
-                string[] arrInfo = (string[])item.Tag;
+                ListViewItem lviItem = (ListViewItem)lvPodFeeds.SelectedItem;
+                string[] arrInfo = (string[])lviItem.Tag;
 
                 // arrInfo =     Title, Desc, Url, Image Name 
-                XElement deleteFeed = xmlFeeds.Descendants("podcast").Where(x => (string)x.Attribute("title") == arrInfo[0]).FirstOrDefault();
+                XElement xelDeleteFeed = xmlFeeds.Descendants("podcast").Where(x => (string)x.Attribute("title") == arrInfo[0]).FirstOrDefault();
 
-                if (deleteFeed != null)
+                if (xelDeleteFeed != null)
                 {
-                    deleteFeed.Remove(); // Remove from the xml file
+                    xelDeleteFeed.Remove(); // Remove from the xml file
                     xmlFeeds.Save(strFeedsXMLPath);
                 }
-                lvPodFeeds.Items.RemoveAt(lvPodFeeds.Items.IndexOf(item)); // Remove from the listview
+                lvPodFeeds.Items.RemoveAt(lvPodFeeds.Items.IndexOf(lviItem)); // Remove from the listview
 
                 if(File.Exists(strFeedImagesDirPath + arrInfo[3]))
                 {
@@ -145,11 +137,11 @@ namespace podcastClient
                 string strImageName = feed.SelectSingleNode("imageName").InnerText;
 
                 string[] listFeedInfo = { strTitle, strDesc, strUrl, strImageName };
-                ListViewItem item = new ListViewItem();
-                item.Content = strTitle;
+                ListViewItem lviItem = new ListViewItem();
+                lviItem.Content = strTitle;
 
-                item.Tag = listFeedInfo; // Associates the feeds information with the listview item so it can be easily accessed later
-                lvPodFeeds1.Items.Add(item);
+                lviItem.Tag = listFeedInfo; // Associates the feeds information with the listview item so it can be easily accessed later
+                lvPodFeeds1.Items.Add(lviItem);
 
             }
 
@@ -168,17 +160,17 @@ namespace podcastClient
 
             IEnumerable<XElement> xmlEpisodes = xmlDownloads.Descendants("episode");
 
-            foreach(XElement episode in xmlEpisodes)
+            foreach(XElement xelEpisode in xmlEpisodes)
             {
-                string strTitle = episode.Attribute("title").Value;
-                string strDesc = episode.Element("description").Value;
-                string strImgName = episode.Element("imgName").Value;
-                string strFileName = episode.Element("fileName").Value;
+                string strTitle = xelEpisode.Attribute("title").Value;
+                string strDesc = xelEpisode.Element("description").Value;
+                string strImgName = xelEpisode.Element("imgName").Value;
+                string strFileName = xelEpisode.Element("fileName").Value;
                 Episode ep = new Episode() { Title = strTitle, Description = strDesc, FileName = strFileName, ImgName = strImgName, Progress = "Done" };
 
                 if (File.Exists(strDownloadsDirPath + strFileName))
                 {
-                    episodes.Add(ep);
+                    obCollEpisodes.Add(ep);
                 }
                 else
                 {
@@ -207,8 +199,8 @@ namespace podcastClient
 
                     if (!worker.IsBusy)
                     {
-                        ListViewItem selected = (ListViewItem)lvPodFeeds.SelectedItem;
-                        string[] arrInfo = (string[])selected.Tag;
+                        ListViewItem lviSelected = (ListViewItem)lvPodFeeds.SelectedItem;
+                        string[] arrInfo = (string[])lviSelected.Tag;
 
                         worker.DoWork += worker_DoWork;
                         worker.RunWorkerCompleted += worker_RunWorkerCompleted;
@@ -275,17 +267,17 @@ namespace podcastClient
         {
             if (lvPodEpisodes.SelectedItems.Count == 1) // Check if an item is selected just to be safe
             {
-                ListViewItem item = (ListViewItem)lvPodEpisodes.SelectedItem;
-                string[] epInfo = (string[])item.Tag;
-                // epInfo =  strTitle, strDesc, strUrl, File Name, Image Name
+                ListViewItem lviItem = (ListViewItem)lvPodEpisodes.SelectedItem;
+                string[] arrEpInfo = (string[])lviItem.Tag;
+                // arrEpInfo =  strTitle, strDesc, strUrl, File Name, Image Name (phils reference)
 
-                txtTitle.Text = epInfo[0];
-                txtDesc.Text = epInfo[1];
+                txtTitle.Text = arrEpInfo[0];
+                txtDesc.Text = arrEpInfo[1];
 
 
                 try
                 {
-                    imgFeedImage.Source = LoadImage(strFeedImagesDirPath + epInfo[4]);
+                    imgFeedImage.Source = LoadImage(strFeedImagesDirPath + arrEpInfo[4]);
                 }
                 catch (Exception) // If it fails to set the image (Eg. It's non-existent) It will leave it blank
                 {
@@ -298,8 +290,8 @@ namespace podcastClient
         {
             if (lvPodFeeds.SelectedItems.Count == 1) // Check if an item is selected just to be safe
             {
-                ListViewItem item = (ListViewItem)lvPodFeeds.SelectedItem;
-                string[] arrInfo = (string[])item.Tag;
+                ListViewItem lviItem = (ListViewItem)lvPodFeeds.SelectedItem;
+                string[] arrInfo = (string[])lviItem.Tag;
                 txtTitle.Text = arrInfo[0];
                 txtDesc.Text = arrInfo[1];
 
@@ -380,25 +372,24 @@ namespace podcastClient
 
                 if (c.ChangedButton == MouseButton.Left) // Left button was double clicked
                 {
-                    ListViewItem selected = (ListViewItem)lvPodEpisodes.SelectedItem;
-                    string[] epInfo = (string[])selected.Tag;
+                    ListViewItem lviSelected = (ListViewItem)lvPodEpisodes.SelectedItem;
+                    string[] arrEpInfo = (string[])lviSelected.Tag;
 
-                    Uri downloadUrl = new Uri(epInfo[2]);
-                    // epInfo =  strTitle, strDesc, strUrl, File Name, Image Name
+                    Uri uriDownloadUrl = new Uri(arrEpInfo[2]);
+                    // arrEpInfo =  strTitle, strDesc, strUrl, File Name, Image Name
 
 
                     using (WebClient client = new WebClient())
                     {
-                        var newEpisode = new Episode() { Title = epInfo[0], Progress = "0%", FileName = epInfo[3], Description = epInfo[1], ImgName = epInfo[4], feedClient = client};
-                        if (!episodes.Any(p => p.Title == newEpisode.Title && p.Description == newEpisode.Description && p.FileName == newEpisode.FileName)) // Prevents duplicate downloads
+                        var newEpisode = new Episode() { Title = arrEpInfo[0], Progress = "0%", FileName = arrEpInfo[3], Description = arrEpInfo[1], ImgName = arrEpInfo[4], feedClient = client};
+                        if (!obCollEpisodes.Any(p => p.Title == newEpisode.Title && p.Description == newEpisode.Description && p.FileName == newEpisode.FileName)) // Prevents duplicate downloads
                         {
-                            episodes.Add(newEpisode);
-                            int index = episodes.IndexOf(newEpisode);
+                            obCollEpisodes.Add(newEpisode);
 
                             client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, newEpisode));
                             client.DownloadFileCompleted += new AsyncCompletedEventHandler((sender, e) => Completed(sender, e, newEpisode));
 
-                            client.DownloadFileAsync(downloadUrl, (strDownloadsDirPath + epInfo[3]));
+                            client.DownloadFileAsync(uriDownloadUrl, (strDownloadsDirPath + arrEpInfo[3]));
                         }
                     }
 
@@ -420,7 +411,7 @@ namespace podcastClient
             {
                 // delete the partially-downloaded file
                 File.Delete(strDownloadsDirPath + ep.FileName);
-                episodes.Remove(ep);
+                obCollEpisodes.Remove(ep);
                 return;
             }
             ep.Progress = "Done";
@@ -474,7 +465,7 @@ namespace podcastClient
                     File.Delete(strDownloadsDirPath + ep.FileName);
                 if (ep != null)
                 {
-                    episodes.Remove(ep);
+                    obCollEpisodes.Remove(ep);
                 }
             }
             else
@@ -484,31 +475,31 @@ namespace podcastClient
 
 
             XDocument xmlDownloads = XDocument.Load(strDownloadsXMLPath);
-            XElement deleteFeed = xmlDownloads.Descendants("episode").Where(x => (string)x.Attribute("title") == ep.Title).FirstOrDefault();
-            if (deleteFeed != null)
+            XElement xelDeleteFeed = xmlDownloads.Descendants("episode").Where(x => (string)x.Attribute("title") == ep.Title).FirstOrDefault();
+            if (xelDeleteFeed != null)
             {
-                deleteFeed.Remove();
+                xelDeleteFeed.Remove();
                 xmlDownloads.Save(strDownloadsXMLPath);
             }
 
         }
 
-        private BitmapImage LoadImage(string myImageFile) // Using this stops the program from locking up images so I can delete them when removing a feed.
+        private BitmapImage LoadImage(string strImageFile) // Using this stops the program from locking up images so I can delete them when removing a feed.
         {
-            BitmapImage myRetVal = null;
-            if (myImageFile != null)
+            BitmapImage bmpRetVal = null;
+            if (strImageFile != null)
             {
-                BitmapImage image = new BitmapImage();
-                using (FileStream stream = File.OpenRead(myImageFile))
+                BitmapImage bmpImage = new BitmapImage();
+                using (FileStream stream = File.OpenRead(strImageFile))
                 {
-                    image.BeginInit();
-                    image.CacheOption = BitmapCacheOption.OnLoad;
-                    image.StreamSource = stream;
-                    image.EndInit();
+                    bmpImage.BeginInit();
+                    bmpImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bmpImage.StreamSource = stream;
+                    bmpImage.EndInit();
                 }
-                myRetVal = image;
+                bmpRetVal = bmpImage;
             }
-            return myRetVal;
+            return bmpRetVal;
         }
     }
     #endregion
@@ -609,4 +600,3 @@ namespace podcastClient
     }
 
 }
-//TODO: add an about page with the version creator etc

@@ -106,14 +106,14 @@ namespace podcastClient
                     }
 
                     XDocument xmlFeeds = XDocument.Load(strFeedsXMLPath);
-                    XElement podcast = new XElement("podcast", //Creating an element with all feed information
+                    XElement xelPodcast = new XElement("podcast", //Creating an element with all feed information
                         new XElement("title", strFeedTitle),
                         new XElement("description", strFeedDesc),
                         new XElement("url", strUrl),
                         new XElement("image", strFeedImage),
                         new XElement("imageName", strImageName));
-                    podcast.SetAttributeValue("title", strFeedTitle);
-                    xmlFeeds.Root.Add(podcast); // Adding the element to the feeds.xml file
+                    xelPodcast.SetAttributeValue("title", strFeedTitle);
+                    xmlFeeds.Root.Add(xelPodcast); // Adding the element to the feeds.xml file
                     xmlFeeds.Save(strFeedsXMLPath);
 
                     this.Dispatcher.Invoke(() => 
