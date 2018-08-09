@@ -26,8 +26,8 @@ using System.Collections.Specialized;
 using System.Collections;
 #endregion
 
-#region mainWindow 
-namespace podcastClient // STOP DUPLICTES IN FEEDS LISTVIEW
+#region mainWindow
+namespace podcastClient
 {
 
     public partial class MainWindow : Window
@@ -77,7 +77,7 @@ namespace podcastClient // STOP DUPLICTES IN FEEDS LISTVIEW
                     ep.feedClient.CancelAsync();
             }
         }
-        #endregion 
+        #endregion
 
         #region buttons
         private void btnManualAdd_Click(object sender, RoutedEventArgs e)
@@ -149,10 +149,8 @@ namespace podcastClient // STOP DUPLICTES IN FEEDS LISTVIEW
                 item.Content = strTitle;
 
                 item.Tag = listFeedInfo; // Associates the feeds information with the listview item so it can be easily accessed later
-                //if (!lvPodFeeds1.Items.Contains(item))
-                //{
-                //    lvPodFeeds1.Items.Add(item);
-                //}
+                lvPodFeeds1.Items.Add(item);
+
             }
 
         }
@@ -199,15 +197,15 @@ namespace podcastClient // STOP DUPLICTES IN FEEDS LISTVIEW
         Regex reFileName = new Regex(@"[^/\\&\?]+\.\w{3,4}(?=([\?&].*$|$))");
         private void lvPodFeeds_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-
+            
             if (e.ChangedButton == MouseButton.Left) // Left button was double clicked
             {
                 lvPodEpisodes.Items.Clear();
                 if (lvPodFeeds.SelectedItems.Count == 1) // Check if an item is selected just to be safe
                 {
-                    string strTitle = "";
-                    string strDesc = "";
-                    string strUrl = "";
+                    string strTitle;
+                    string strDesc;
+                    string strUrl;
 
                     ListViewItem selected = (ListViewItem)lvPodFeeds.SelectedItem;
                     string[] arrInfo = (string[])selected.Tag;
@@ -216,7 +214,6 @@ namespace podcastClient // STOP DUPLICTES IN FEEDS LISTVIEW
                     XmlDocument xmlFeed = new XmlDocument();
 
                     // arrInfo = Title, Desc, Url, ImageName (For Phils reference)
-
 
                     xmlFeed.Load(arrInfo[2]); //Load xml of rss feed with the requested episodes
 
@@ -228,7 +225,7 @@ namespace podcastClient // STOP DUPLICTES IN FEEDS LISTVIEW
                         strDesc = ep.SelectSingleNode("description").InnerText;
                         strUrl = ep.SelectSingleNode("enclosure").Attributes["url"].Value;
 
-                        string[] listEpisodesInfo = { strTitle, strDesc, strUrl, reFileName.Match(strUrl).ToString(), arrInfo[3] };
+                        string[] listEpisodesInfo = { strTitle, strDesc, strUrl, reFileName.Match(strUrl).ToString(), arrInfo[3]};
                         ListViewItem item = new ListViewItem();
                         item.Content = strTitle;
                         item.Tag = listEpisodesInfo; // Associates the feeds information with the listview item so it can be easily accessed later
@@ -236,7 +233,7 @@ namespace podcastClient // STOP DUPLICTES IN FEEDS LISTVIEW
                     }
 
                 }
-
+                
             }
             
         }
