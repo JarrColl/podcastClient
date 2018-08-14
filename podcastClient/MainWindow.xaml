@@ -54,6 +54,7 @@
                 <Button  x:Name="btnDel" Content="Delete Feed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,0,20,0" Grid.Column="1" Click="btnDel_Click"/>
                 <Button  x:Name="btnDelEp" Content="Delete Download" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,0,20,0" Grid.Column="2" Click="btnDelEp_Click"/>
             </Grid>
+            <Button x:Name="btnHelp" Content="Help" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="100" Click="btnHelp_Click"/>
 
 
         </Grid>

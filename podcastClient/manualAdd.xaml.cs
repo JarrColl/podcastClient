@@ -65,15 +65,9 @@ namespace podcastClient
 
             try //For when the user does not enter a valid url with an xml file
             {
-                try
-                {
-                    xmlNew.Load(@strUrl); // Load xml from the RSS feed
-                }
-                catch(Exception)
-                {
-                    strUrl = "https://" + @strUrl;
-                    xmlNew.Load(@strUrl);
-                }
+
+                xmlNew.Load(@strUrl); // Load xml from the RSS feed
+
                 XmlNode xmlTitle = xmlNew.SelectSingleNode("//rss/channel/title");
                 XmlNode xmlDesc = xmlNew.SelectSingleNode("//rss/channel/description"); // Collect Relevant information from the external xml file
                 XmlNodeList imageNodes = xmlNew.GetElementsByTagName("itunes:image");
@@ -133,9 +127,9 @@ namespace podcastClient
                 }
 
             }
-            catch (Exception)
+            catch (Exception) // If the input is not a link or the link does not contain an rss feed (pretty much the only way to do it is with try-catch)
             {
-                MessageBox.Show("There was an Error, Check your URL!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("There was an Error, Check your URL!\nEnsure you included the https://", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         private void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)

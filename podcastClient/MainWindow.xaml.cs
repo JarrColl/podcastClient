@@ -63,7 +63,7 @@ namespace podcastClient
 
         private void MainWindow1_Closing(object sender, CancelEventArgs e)
         {
-            foreach (Episode ep in obCollEpisodes)
+            foreach (Episode ep in obCollEpisodes) // Delete all partially downloaded episodes to avoid filling the hard drive with junk
             {
                 if (ep.Progress != "Done")
                     ep.feedClient.CancelAsync();
@@ -86,7 +86,7 @@ namespace podcastClient
                 ListViewItem lviItem = (ListViewItem)lvPodFeeds.SelectedItem;
                 string[] arrInfo = (string[])lviItem.Tag;
 
-                // arrInfo =     Title, Desc, Url, Image Name 
+                // arrInfo =     Title, Description, Url, Image Name 
                 XElement xelDeleteFeed = xmlFeeds.Descendants("podcast").Where(x => (string)x.Attribute("title") == arrInfo[0]).FirstOrDefault();
 
                 if (xelDeleteFeed != null)
@@ -98,7 +98,7 @@ namespace podcastClient
 
                 if(File.Exists(strFeedImagesDirPath + arrInfo[3]))
                 {
-                    File.Delete(strFeedImagesDirPath + arrInfo[3]); // Delete the feeds cover image
+                    File.Delete(strFeedImagesDirPath + arrInfo[3]); // Delete the feeds cover image (if it exists)
                 }
             }
         }
@@ -109,6 +109,11 @@ namespace podcastClient
             {
                 deleteDownload((Episode)lvPodDownloads.SelectedItem);
             }
+        }
+
+        private void btnHelp_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Double click on a feed to see available episodes, Double click on an episode to download it, and double click on the download to play it.\nDownloads play in the default audio player (VLC is recommended)\nGet it at https://www.videolan.org/vlc/download-windows.html");
         }
         #endregion
 
@@ -206,6 +211,7 @@ namespace podcastClient
                         worker.RunWorkerCompleted += worker_RunWorkerCompleted;
                         worker.RunWorkerAsync(arrInfo);
                         Mouse.OverrideCursor = Cursors.Wait;
+                        tabEpisodes.IsSelected = true;
                     }
 
                 }
@@ -459,7 +465,7 @@ namespace podcastClient
         #region misc Functions
         static private void deleteDownload(Episode ep)
         {
-            if (ep.Progress == "Done")
+            if (ep.Progress == "Done") // If the download is not done the async download must be canceled first.
             {
                 if (File.Exists(strDownloadsDirPath + ep.FileName))
                     File.Delete(strDownloadsDirPath + ep.FileName);
@@ -470,7 +476,7 @@ namespace podcastClient
             }
             else
             {
-                ep.feedClient.CancelAsync();
+                ep.feedClient.CancelAsync(); // Partially downloaded file is removed in the Async cancelled event
             }
 
 
@@ -501,6 +507,8 @@ namespace podcastClient
             }
             return bmpRetVal;
         }
+
+
     }
     #endregion
 
