@@ -369,8 +369,8 @@ namespace podcastClient
         }
         #endregion
 
-        #region Downloading
-
+        #region Downloading         (Special algorithm in here)
+        // THIS IS MY SPECIAL ALGORITHM PHIL, I DOCUMENTED IT HERE LIKE YOU SAID
         private void lvPodEpisodes_MouseDoubleClick(object senderTwo, MouseButtonEventArgs c) // Downloading the episode in here
         {
             if (lvPodEpisodes.SelectedItems.Count == 1)
@@ -385,17 +385,17 @@ namespace podcastClient
                     // arrEpInfo =  strTitle, strDesc, strUrl, File Name, Image Name
 
 
-                    using (WebClient client = new WebClient())
+                    using (WebClient client = new WebClient()) // Webclient is used to download from the web
                     {
-                        var newEpisode = new Episode() { Title = arrEpInfo[0], Progress = "0%", FileName = arrEpInfo[3], Description = arrEpInfo[1], ImgName = arrEpInfo[4], feedClient = client};
+                        var newEpisode = new Episode() { Title = arrEpInfo[0], Progress = "0%", FileName = arrEpInfo[3], Description = arrEpInfo[1], ImgName = arrEpInfo[4], feedClient = client}; // This is a class to track individual downloads for progress file location etc
                         if (!obCollEpisodes.Any(p => p.Title == newEpisode.Title && p.Description == newEpisode.Description && p.FileName == newEpisode.FileName)) // Prevents duplicate downloads
                         {
-                            obCollEpisodes.Add(newEpisode);
+                            obCollEpisodes.Add(newEpisode); // add the episode to the observable collection and therefore the listView
 
-                            client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, newEpisode));
-                            client.DownloadFileCompleted += new AsyncCompletedEventHandler((sender, e) => Completed(sender, e, newEpisode));
+                            client.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) => ProgressChanged(sender, e, newEpisode)); // WIll run what is in the ProgressChanged() function every time the download progress changes
+                            client.DownloadFileCompleted += new AsyncCompletedEventHandler((sender, e) => Completed(sender, e, newEpisode)); // WIll run what is in the Completed() function when the download is finished or is cancelled
 
-                            client.DownloadFileAsync(uriDownloadUrl, (strDownloadsDirPath + arrEpInfo[3]));
+                            client.DownloadFileAsync(uriDownloadUrl, (strDownloadsDirPath + arrEpInfo[3])); // This starts the download
                         }
                     }
 
@@ -407,22 +407,22 @@ namespace podcastClient
         private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e, Episode ep)
         {
 
-            ep.Progress = $"{e.ProgressPercentage}%";
+            ep.Progress = $"{e.ProgressPercentage}%"; // Changes the progress so it is updated in the listview
             //e.ProgressPercentage;
         }
 
         private void Completed(object sender, AsyncCompletedEventArgs e, Episode ep)
         {
-            if (e.Cancelled)
+            if (e.Cancelled) // If the download is cancelled before it finishes
             {
-                // delete the partially-downloaded file
-                File.Delete(strDownloadsDirPath + ep.FileName);
-                obCollEpisodes.Remove(ep);
+
+                File.Delete(strDownloadsDirPath + ep.FileName);        // delete the partially-downloaded file
+                obCollEpisodes.Remove(ep); // and remove from the observable collection / listview
                 return;
             }
             ep.Progress = "Done";
 
-            if (!File.Exists(strDownloadsXMLPath)) //Safety
+            if (!File.Exists(strDownloadsXMLPath)) // if the downloads xml file is missing
             {
                 var file = File.Create(strDownloadsXMLPath);
                 file.Close();
@@ -430,7 +430,7 @@ namespace podcastClient
             }
             XDocument xmlEpisodes = XDocument.Load(strDownloadsXMLPath);
 
-            XElement xmlEpisode = new XElement("episode",
+            XElement xmlEpisode = new XElement("episode",   // Adds the completed download to an xml to keep track of them so they are added back to the listView on launch
                 new XElement("description", ep.Description),
                 new XElement("imgName", ep.ImgName),
                 new XElement("fileName", ep.FileName));
@@ -512,7 +512,7 @@ namespace podcastClient
     }
     #endregion
 
-    public class Episode : INotifyPropertyChanged
+    public class Episode : INotifyPropertyChanged // Child of INotifyPropertyChanged the the observableCOllection updates on a property change
     {
         public string _Title;
         public string Title
@@ -540,11 +540,11 @@ namespace podcastClient
         public string ImgName { get; set; }
         public string FileName { get; set; }
 
-        public WebClient feedClient { get; set; }
+        public WebClient feedClient { get; set; } // Keep track of the client so it can be cancelled
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null) // This is so the observable collection updates when a property changes rather than just when an item is removed/added
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
